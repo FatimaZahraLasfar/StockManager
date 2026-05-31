@@ -1,11 +1,11 @@
-export type UseRole = 'Administrator' | 'Stock Manager' | 'Simple User';
+export type UserRole = 'Administrator' | 'Stock Manager' | 'Simple User';
 
 //User Interface
 export interface User{
     id : string;
     name: string;
     email: string;
-    role: UseRole;
+    role: UserRole;
     avatarUrl? : string;
 }
 
