@@ -1,9 +1,6 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
 
-import { Product, Category, Supplier, StockMovement, User, DashboardStats } from '../types';
+
+import type { Product, Category, Supplier, StockMovement, User, DashboardStats } from '../types';
 
 // Storage keys
 const KEYS = {
