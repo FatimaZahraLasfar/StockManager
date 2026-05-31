@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { apiClient, isNetworkError } from './apiClient';
 import { type User, type UserRole } from '../types';
 import { MOCK_USERS, MockDb } from './mockDB';
