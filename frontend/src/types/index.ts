@@ -1,36 +1,34 @@
+
 export type UserRole = 'Administrator' | 'Stock Manager' | 'Simple User';
 
-//User Interface
-export interface User{
-    id : string;
-    name: string;
-    email: string;
-    role: UserRole;
-    avatarUrl? : string;
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatarUrl?: string;
 }
 
-//Catgeory Interface
-export interface Catgeory {
-    id : string;
-    name : string;
-    description : string;
-    createdAt : string;
-    productCount? : number;
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  productCount?: number;
 }
 
-//Supplier Interface
-export interface Supplier{
-    id : string;
-    name : string;
-    email : string;
-    phone : string;
-    address : string;
-    createdAt : string;
-    productCount? : number;
+export interface Supplier {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  createdAt: string;
+  productCount?: number;
 }
 
-//Product Interface
 export interface Product {
+  // sku: string;
   id: string;
   name: string;
   description: string;
@@ -39,11 +37,11 @@ export interface Product {
   quantity: number;
   unitPrice: number;
   minStockThreshold: number;
-  category? : Catgeory;      // Included when populated
-  supplier? : Supplier;     // Included when populated
+  category?: Category;     // Included when populated
+  supplier?: Supplier;     // Included when populated
+  createdAt: string;
 }
 
-//StockMovement Interface
 export interface StockMovement {
   id: string;
   productId: string;
@@ -56,7 +54,6 @@ export interface StockMovement {
   userName: string;
 }
 
-// DashboardStats Interface
 export interface DashboardStats {
   totalProducts: number;
   totalCategories: number;
