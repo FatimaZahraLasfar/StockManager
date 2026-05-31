@@ -1,10 +1,6 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, UserRole } from '../types';
+import { type User, type UserRole } from '../types';
 import { authService } from '../services/authService';
 
 interface AuthContextType {
