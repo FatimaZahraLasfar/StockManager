@@ -1,9 +1,16 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { supplierService } from '../services/supplierService';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import type { Supplier } from '../types';
+import { type Supplier } from '../types';
+import { productService } from '../services/productService';
+import type { Product } from '../types';
 import { 
   Plus, 
   Truck, 
@@ -24,14 +31,15 @@ export const Suppliers: React.FC = () => {
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
 
   // Modal Dialogs Control
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Role Checks
-  const canModify = hasRole(['Administrator', 'Stock Manager']);
+  const canModify = hasRole(['ADMIN', 'MANAGER']);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
@@ -42,21 +50,46 @@ export const Suppliers: React.FC = () => {
     }
   });
 
-  const loadSuppliers = async () => {
-    setIsLoading(true);
-    try {
-      const data = await supplierService.getAll();
-      setSuppliers(data);
-    } catch {
+const loadSuppliers = async () => {
+  console.log('Loading suppliers...');
+  setIsLoading(true);
+  
+  // 1. Load suppliers first (page becomes visible)
+  try {
+    const supplierData = await supplierService.getAll();
+    setSuppliers(supplierData);
+  } catch (err: any) {
+    console.error('Supplier load error:', err);
+    if (err.response?.status === 403) {
+      showError('Authentication failed. Please log out and log in again.');
+    } else {
       showError('Failed to synchronize supplier indexes directory.');
-    } finally {
-      setIsLoading(false);
     }
-  };
+    setIsLoading(false);
+    return;
+  }
 
-  useEffect(() => {
-    loadSuppliers();
-  }, []);
+  // 2. Load products in the background (does not block the UI)
+  try {
+    const productData = await productService.getAll();
+    setProducts(productData);
+    console.log('Products loaded successfully – counts will update');
+  } catch (err: any) {
+    console.error('Product load error (non-critical):', err);
+    // Keep products empty – counts remain 0
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+useEffect(() => {
+  loadSuppliers();
+}, []);
+
+const getProductCount = (supplierId: number): number => {
+  if (!products) return 0;
+  return products.filter(p => Number(p.supplierId) === supplierId).length;
+};
 
   const handleOpenCreateModal = () => {
     setEditingSupplier(null);
@@ -78,7 +111,7 @@ export const Suppliers: React.FC = () => {
   const onSubmit = async (data: any) => {
     try {
       if (editingSupplier) {
-        await supplierService.update(editingSupplier.id, data);
+        await supplierService.update(Number(editingSupplier.id), data);
         showSuccess(`Supplier partner "${data.name}" successfully updated in directory database.`);
       } else {
         await supplierService.create(data);
@@ -93,16 +126,16 @@ export const Suppliers: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await supplierService.delete(id);
-      showSuccess('Supplier records dropped successfully.');
-      setDeletingId(null);
-      loadSuppliers();
-    } catch (err: any) {
-      showError(err.message || 'Purge rejected. Operational dependencies block drop action.');
-    }
-  };
+  const handleDelete = async (id: number) => {
+  try {
+    await supplierService.delete(id);
+    showSuccess('Supplier records dropped successfully.');
+    setDeletingId(null);
+    loadSuppliers();
+  } catch (err: any) {
+    showError(err.message || 'Purge rejected. Operational dependencies block drop action.');
+  }
+};
 
   if (isLoading) {
     return (
@@ -169,7 +202,7 @@ export const Suppliers: React.FC = () => {
 
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-mono text-[10px] font-bold border border-emerald-100">
                     <Building className="w-3 h-3 text-emerald-500" />
-                    <span>{supplier.productCount || 0} product(s)</span>
+                    <span>{getProductCount(Number(supplier.id))} product(s)</span>
                   </span>
                 </div>
 
@@ -207,7 +240,7 @@ export const Suppliers: React.FC = () => {
                     <span>Edit Profile</span>
                   </button>
                   <button
-                    onClick={() => setDeletingId(supplier.id)}
+                    onClick={() => setDeletingId(Number(supplier.id))}
                     className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:border-red-150 hover:text-red-650 transition-all font-semibold text-xs cursor-pointer"
                     id={`delete_sup_${supplier.id}`}
                   >
@@ -312,7 +345,7 @@ export const Suppliers: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-650 hover:bg-emerald-750 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/10 cursor-pointer"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/10 cursor-pointer"
                   id="btn_form_sup_submit"
                 >
                   {editingSupplier ? 'Apply Save' : 'Generate Partner Profile'}
@@ -335,7 +368,7 @@ export const Suppliers: React.FC = () => {
             
             <h3 className="text-xs font-bold text-slate-850">Verify Supplier Purge</h3>
             <p className="text-[11px] text-slate-500 leading-relaxed mt-2">
-              Dropping partner <strong>"{suppliers.find(s => s.id === deletingId)?.name}"</strong> will isolate active listings. Are there active contracts outstanding?
+              Dropping partner <strong>"{suppliers.find(s => Number(s.id) === deletingId)?.name}"</strong> will isolate active listings. Are there active contracts outstanding?
             </p>
 
             <div className="mt-4.5 flex gap-2">
@@ -346,8 +379,8 @@ export const Suppliers: React.FC = () => {
                 Retain Partner
               </button>
               <button
-                onClick={() => handleDelete(deletingId)}
-                className="flex-1 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl font-bold text-xs cursor-pointer"
+                onClick={() => deletingId !== null && handleDelete(deletingId)}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs cursor-pointer"
                 id="btn_confirm_purge"
               >
                 Yes, Purge

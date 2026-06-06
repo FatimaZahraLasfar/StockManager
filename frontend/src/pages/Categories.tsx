@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { categoryService } from '../services/categoryService';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import type { Category } from '../types';
+import type { Category, Product } from '../types';
 import { 
   Plus, 
   Tags, 
@@ -18,6 +17,7 @@ import {
   Activity,
   Info
 } from 'lucide-react';
+import { productService } from '../services/productService';
 
 export const Categories: React.FC = () => {
   const { user, hasRole } = useAuth();
@@ -30,9 +30,10 @@ export const Categories: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
 
   // Role Checks
-  const canModify = hasRole(['Administrator', 'Stock Manager']);
+  const canModify = hasRole(['ADMIN', 'MANAGER']);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
@@ -42,16 +43,21 @@ export const Categories: React.FC = () => {
   });
 
   const loadCategories = async () => {
-    setIsLoading(true);
-    try {
-      const data = await categoryService.getAll();
-      setCategories(data);
-    } catch {
-      showError('Failed to fetch product divisions/categories.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  setIsLoading(true);
+  try {
+    const cats = await categoryService.getAll();
+    const prods = await productService.getAll();
+    setCategories(cats);
+    setProducts(prods);
+  } catch {
+    showError('Failed to fetch product divisions/categories.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+  const getProductCount = (categoryId: string | number) => {
+  return products.filter(p => String(p.categoryId) === String(categoryId)).length;
+};
 
   useEffect(() => {
     loadCategories();
@@ -80,7 +86,7 @@ export const Categories: React.FC = () => {
       };
 
       if (editingCategory) {
-        await categoryService.update(editingCategory.id, payload);
+        await categoryService.update(Number(editingCategory.id), payload);
         showSuccess(`Category "${payload.name}" successfully updated in configuration directory.`);
       } else {
         await categoryService.create(payload);
@@ -97,7 +103,7 @@ export const Categories: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await categoryService.delete(id);
+      await categoryService.delete(Number(deletingId));
       showSuccess('Category purged successfully from structural catalogs.');
       setDeletingId(null);
       loadCategories();
@@ -172,7 +178,7 @@ export const Categories: React.FC = () => {
                   {/* Quantity indicator tag */}
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-50 text-slate-700 font-mono text-[10px] font-bold border border-slate-100 uppercase" title="Unique products in this section">
                     <FolderOpen className="w-3 h-3 text-slate-400" />
-                    <span>{category.productCount || 0} product(s)</span>
+                    <span>{getProductCount(category.id)} product(s)</span>
                   </span>
                 </div>
 
@@ -201,7 +207,7 @@ export const Categories: React.FC = () => {
                       <Edit2 className="h-3 w-3" />
                     </button>
                     <button
-                      onClick={() => setDeletingId(category.id)}
+                      onClick={() => setDeletingId(String(category.id))}
                       className="p-1 px-2 text-gray-400 hover:text-red-650 hover:bg-red-50 border border-transparent hover:border-red-100 rounded cursor-pointer transition-all h-7 flex items-center justify-center"
                       title="Purge Category"
                       id={`delete_cat_${category.id}`}
@@ -268,7 +274,7 @@ export const Categories: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-650 hover:bg-indigo-750 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 cursor-pointer"
                   id="btn_form_cat_submit"
                 >
                   {editingCategory ? 'Apply Save' : 'Generate Category'}
@@ -303,7 +309,7 @@ export const Categories: React.FC = () => {
               </button>
               <button
                 onClick={() => handleDelete(deletingId)}
-                className="flex-1 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl font-bold text-xs cursor-pointer"
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs cursor-pointer"
                 id="btn_confirm_purge"
               >
                 Yes, Purge Tag

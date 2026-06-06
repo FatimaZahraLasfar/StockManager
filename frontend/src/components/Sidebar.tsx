@@ -22,25 +22,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const { user, hasRole } = useAuth();
 
   const menuItems = [
-    {
-      title: 'Navigation',
-      items: [
-        { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['Administrator', 'Stock Manager', 'Simple User'] },
-        { name: 'Products', path: '/products', icon: Package, roles: ['Administrator', 'Stock Manager', 'Simple User'] },
-        { name: 'Categories', path: '/categories', icon: Tags, roles: ['Administrator', 'Stock Manager', 'Simple User'] },
-        { name: 'Suppliers', path: '/suppliers', icon: Truck, roles: ['Administrator', 'Stock Manager', 'Simple User'] },
-      ]
-    },
-    {
-      title: 'Operations',
-      items: [
-        { name: 'Stock Entry', path: '/stock-entry', icon: PlusCircle, roles: ['Administrator', 'Stock Manager'] },
-        { name: 'Stock Exit', path: '/stock-exit', icon: MinusCircle, roles: ['Administrator', 'Stock Manager'] },
-        { name: 'Movement History', path: '/movements', icon: History, roles: ['Administrator', 'Stock Manager', 'Simple User'] },
-      ]
-    }
-  ];
-
+  {
+    title: 'Navigation',
+    items: [
+      { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER', 'USER'] },
+      { name: 'Products', path: '/products', icon: Package, roles: ['ADMIN', 'MANAGER', 'USER'] },
+      { name: 'Categories', path: '/categories', icon: Tags, roles: ['ADMIN', 'MANAGER', 'USER'] },
+      { name: 'Suppliers', path: '/suppliers', icon: Truck, roles: ['ADMIN', 'MANAGER', 'USER'] },
+    ]
+  },
+  {
+    title: 'Operations',
+    items: [
+      { name: 'Stock Entry', path: '/stock-entry', icon: PlusCircle, roles: ['ADMIN', 'MANAGER'] },
+      { name: 'Stock Exit', path: '/stock-exit', icon: MinusCircle, roles: ['ADMIN', 'MANAGER'] },
+      { name: 'Movement History', path: '/movements', icon: History, roles: ['ADMIN', 'MANAGER', 'USER'] },
+    ]
+  }
+];
   return (
     <div className="flex flex-col h-full bg-white text-slate-600 border-r border-slate-200">
       {/* Brand Header */}
@@ -59,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         {menuItems.map((section, idx) => {
           // Filter section items that the current user role is allowed to view
           const allowedItems = section.items.filter(item => 
-            !item.roles || (user && item.roles.includes(user.role))
+            !item.roles || hasRole(item.roles as any)
           );
 
           if (allowedItems.length === 0) return null;

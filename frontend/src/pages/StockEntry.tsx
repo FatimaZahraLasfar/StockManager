@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -5,7 +10,7 @@ import { productService } from '../services/productService';
 import { inventoryService } from '../services/inventoryService';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import type { Product } from '../types';
+import {type Product } from '../types';
 import { 
   PlusCircle, 
   ArrowLeft, 
@@ -44,7 +49,7 @@ export const StockEntry: React.FC = () => {
         const list = await productService.getAll();
         setProducts(list);
         if (list.length > 0) {
-          setValue('productId', list[0].id);
+          setValue('productId', String(list[0].id));
         }
       } catch {
         showError('Failed to sync active product catalogs lists.');
@@ -58,7 +63,7 @@ export const StockEntry: React.FC = () => {
   // Track product selection changes to update current available displays
   useEffect(() => {
     if (productIdWatch) {
-      const found = products.find(p => p.id === productIdWatch);
+      const found = products.find(p => String(p.id) === String(productIdWatch));
       setSelectedProduct(found || null);
     } else {
       setSelectedProduct(null);

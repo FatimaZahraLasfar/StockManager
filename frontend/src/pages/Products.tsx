@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { productService } from '../services/productService';
@@ -50,11 +55,10 @@ export const Products: React.FC = () => {
   // CRUD Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null); // holds id of product being deleted
-
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
   // Role Checks
-  const canModify = hasRole(['Administrator', 'Stock Manager']);
-
+  const canModify = hasRole(['ADMIN', 'MANAGER']);
+  
   // React Hook Form for Product Creation/Updates
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     defaultValues: {
@@ -91,33 +95,33 @@ export const Products: React.FC = () => {
 
   // Handle Opening create draft
   const handleOpenCreateModal = () => {
-    setEditingProduct(null);
-    reset({
-      name: '',
-      description: '',
-      categoryId: categories[0]?.id || '',
-      supplierId: suppliers[0]?.id || '',
-      quantity: 0,
-      unitPrice: 0.0,
-      minStockThreshold: 5,
-    });
-    setIsModalOpen(true);
-  };
+  setEditingProduct(null);
+  reset({
+    name: '',
+    description: '',
+    categoryId: categories[0]?.id ? String(categories[0].id) : '',
+    supplierId: suppliers[0]?.id ? String(suppliers[0].id) : '',
+    quantity: 0,
+    unitPrice: 0.0,
+    minStockThreshold: 5,
+  });
+  setIsModalOpen(true);
+};
 
   // Handle Opening update layout draft
   const handleOpenEditModal = (product: Product) => {
-    setEditingProduct(product);
-    reset({
-      name: product.name,
-      description: product.description,
-      categoryId: product.categoryId,
-      supplierId: product.supplierId,
-      quantity: product.quantity,
-      unitPrice: product.unitPrice,
-      minStockThreshold: product.minStockThreshold,
-    });
-    setIsModalOpen(true);
-  };
+  setEditingProduct(product);
+  reset({
+    name: product.name,
+    description: product.description,
+    categoryId: String(product.categoryId),
+    supplierId: String(product.supplierId),
+    quantity: product.quantity,
+    unitPrice: product.unitPrice,
+    minStockThreshold: product.minStockThreshold,
+  });
+  setIsModalOpen(true);
+};
 
   const onSubmit = async (data: any) => {
     try {
@@ -133,9 +137,9 @@ export const Products: React.FC = () => {
       };
 
       if (editingProduct) {
-        const updated = await productService.update(editingProduct.id, payload);
-        showSuccess(`Product "${updated.name}" successfully updated in records database.`);
-      } else {
+  const updated = await productService.update(Number(editingProduct.id), payload);
+  showSuccess(`Product "${updated.name}" successfully updated in records database.`);
+} else {
         const created = await productService.create(payload);
         showSuccess(`New product "${created.name}" successfully registered in database.`);
       }
@@ -148,16 +152,16 @@ export const Products: React.FC = () => {
   };
 
   // Handle Delete operation
-  const handleDeleteProduct = async (id: string, name: string) => {
-    try {
-      await productService.delete(id);
-      showSuccess(`Product "${name}" dropped from active database records.`);
-      setIsDeleting(null);
-      loadData();
-    } catch (err: any) {
-      showError(err.message || 'Failed to purge database metadata for product.');
-    }
-  };
+  const handleDeleteProduct = async (id: number, name: string) => {
+  try {
+    await productService.delete(id);
+    showSuccess(`Product "${name}" dropped from active database records.`);
+    setIsDeleting(null);
+    loadData();
+  } catch (err: any) {
+    showError(err.message || 'Failed to purge database metadata for product.');
+  }
+};
 
   // Sorting Handler
   const handleSort = (field: keyof Product) => {
@@ -181,10 +185,10 @@ export const Products: React.FC = () => {
       (product.supplier?.name || '').toLowerCase().includes(query);
 
     // 2. Category Dropdown Filter
-    const matchesCategory = !categoryFilter || product.categoryId === categoryFilter;
+    const matchesCategory = !categoryFilter || String(product.categoryId) === categoryFilter;
 
     // 3. Supplier Dropdown Filter
-    const matchesSupplier = !supplierFilter || product.supplierId === supplierFilter;
+    const matchesSupplier = !supplierFilter || String(product.supplierId) === supplierFilter;
 
     // 4. Low alerts or out limits filter
     let matchesStatus = true;
@@ -261,7 +265,19 @@ export const Products: React.FC = () => {
           </div>
         )}
       </div>
-
+        {/* Inside the modal, after the header */}
+{categories.length === 0 && (
+  <div className="mx-6 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-xs">
+    <AlertTriangle className="h-4 w-4 inline mr-1" />
+    You need to create at least one category before adding a product.
+  </div>
+)}
+{suppliers.length === 0 && (
+  <div className="mx-6 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-xs">
+    <AlertTriangle className="h-4 w-4 inline mr-1" />
+    You need to create at least one supplier before adding a product.
+  </div>
+)}
       {/* 2. Search & Search Filter Form Actions */}
       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
@@ -383,7 +399,7 @@ export const Products: React.FC = () => {
 
                   return (
                     <tr 
-                      key={product.id} 
+                      key={String(product.id)} 
                       className={`hover:bg-slate-50/40 transition-colors group ${
                         isOut ? 'bg-red-50/10' : isLow ? 'bg-amber-50/10' : ''
                       }`}
@@ -449,8 +465,7 @@ export const Products: React.FC = () => {
                               <Edit2 className="h-3.5 w-3.5" />
                             </button>
                             
-                            <button
-                              onClick={() => setIsDeleting(product.id)}
+                            <button onClick={() => setIsDeleting(Number(product.id))}
                               className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
                               title="Delete product definition"
                               id={`delete_prod_${product.id}`}
@@ -568,9 +583,9 @@ export const Products: React.FC = () => {
                     {...register('categoryId', { required: 'Category assignment is required.' })}
                     className="block w-full px-3 py-2 border border-gray-200 rounded-xl bg-white text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 cursor-pointer"
                   >
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
+                      {categories.map(cat => (
+    <option key={String(cat.id)} value={String(cat.id)}>{cat.name}</option>
+  ))}
                   </select>
                 </div>
 
@@ -583,7 +598,7 @@ export const Products: React.FC = () => {
                     className="block w-full px-3 py-2 border border-gray-200 rounded-xl bg-white text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 cursor-pointer"
                   >
                     {suppliers.map(sup => (
-                      <option key={sup.id} value={sup.id}>{sup.name}</option>
+                      <option key={String(sup.id)} value={String(sup.id)}>{sup.name}</option>
                     ))}
                   </select>
                 </div>
@@ -656,6 +671,7 @@ export const Products: React.FC = () => {
                 </button>
                 <button
                   type="submit"
+                  disabled={categories.length === 0 || suppliers.length === 0}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/10 cursor-pointer"
                   id="btn_form_submit"
                 >
@@ -692,9 +708,9 @@ export const Products: React.FC = () => {
               <button
                 onClick={() => {
                   const target = products.find(p => p.id === isDeleting);
-                  if (target) handleDeleteProduct(target.id, target.name);
+                  if (target) handleDeleteProduct(Number(target.id), target.name);
                 }}
-                className="flex-1 py-1 bg-red-650 hover:bg-red-700 text-white rounded-xl font-bold text-xs cursor-pointer"
+                className="flex-1 py-1 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs cursor-pointer"
                 id="btn_confirm_purge"
               >
                 Yes, Purge
