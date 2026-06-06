@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { productService } from '../services/productService';
@@ -213,24 +214,32 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="h-80 w-full text-xs">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={stats.monthlyMovements}
-                margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="name" tickLine={false} stroke="#94a3b8" fontSize={10} />
-                <YAxis tickLine={false} stroke="#94a3b8" fontSize={10} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: 'none' }} 
-                  labelStyle={{ fontWeight: 'bold' }}
-                />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                <Bar dataKey="entries" name="Inbound (+)" fill="#3b82f6" radius={[2, 2, 0, 0]} maxBarSize={30} />
-                <Bar dataKey="exits" name="Outbound (-)" fill="#cbd5e1" radius={[2, 2, 0, 0]} maxBarSize={30} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+  {stats.monthlyMovements.length === 0 ? (
+    <div className="h-full flex flex-col items-center justify-center text-gray-400">
+      <TrendingUp className="h-8 w-8 mb-2 opacity-30" />
+      <p className="text-xs font-medium">No movement data available yet</p>
+      <p className="text-[10px]">Record stock entries or exits to see trends</p>
+    </div>
+  ) : (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart
+        data={stats.monthlyMovements}
+        margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+        <XAxis dataKey="name" tickLine={false} stroke="#94a3b8" fontSize={10} />
+        <YAxis tickLine={false} stroke="#94a3b8" fontSize={10} />
+        <Tooltip 
+          contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #E2E8F0' }} 
+          labelStyle={{ fontWeight: 'bold' }}
+        />
+        <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+        <Bar dataKey="entries" name="Inbound (+)" fill="#3b82f6" radius={[2, 2, 0, 0]} maxBarSize={30} />
+        <Bar dataKey="exits" name="Outbound (-)" fill="#cbd5e1" radius={[2, 2, 0, 0]} maxBarSize={30} />
+      </BarChart>
+    </ResponsiveContainer>
+  )}
+</div>
         </div>
 
         {/* Chart B: Category Distribution & Products Added */}
@@ -246,46 +255,57 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="h-80 w-full flex flex-col md:flex-row items-center justify-center gap-6">
-            <div className="w-1/2 min-w-[180px] h-full text-xs">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.categoryDistribution}
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {stats.categoryDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value) => [`${value} units`, 'Inventory Stock']}
-                    contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Custom Pie Chart Legend List */}
-            <div className="flex-1 space-y-2.5 w-full md:w-auto">
-              {stats.categoryDistribution.map((entry, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }}
-                    />
-                    <span className="text-xs font-semibold text-gray-700">{entry.name}</span>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
-                    {entry.value} units
-                  </span>
-                </div>
+  {stats.categoryDistribution.length === 0 ? (
+    <div className="h-full flex flex-col items-center justify-center text-gray-400">
+      <Tags className="h-8 w-8 mb-2 opacity-30" />
+      <p className="text-xs font-medium">No categories assigned</p>
+      <p className="text-[10px]">Add products with categories to see distribution</p>
+    </div>
+  ) : (
+    <>
+      {/* Pie Chart */}
+      <div className="w-1/2 min-w-[180px] h-full text-xs">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={stats.categoryDistribution}
+              innerRadius={55}
+              outerRadius={85}
+              paddingAngle={3}
+              dataKey="value"
+            >
+              {stats.categoryDistribution.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
               ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value) => [`${value} units`, 'Inventory Stock']}
+              contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #f1f5f9' }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Legend */}
+      <div className="flex-1 space-y-2.5 w-full md:w-auto">
+        {stats.categoryDistribution.map((entry, idx) => (
+          <div key={idx} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
+            <div className="flex items-center gap-2">
+              <span 
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }}
+              />
+              <span className="text-xs font-semibold text-gray-700">{entry.name}</span>
             </div>
+            <span className="text-xs font-mono font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+              {entry.value} units
+            </span>
           </div>
+        ))}
+      </div>
+    </>
+  )}
+</div>
         </div>
 
       </div>
@@ -301,27 +321,35 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="h-64 w-full text-xs">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={stats.productsAddedByMonth}
-                margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
-              >
-                <defs>
-                  <linearGradient id="colorAdded" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="name" tickLine={false} stroke="#94a3b8" fontSize={10} />
-                <YAxis tickLine={false} stroke="#94a3b8" fontSize={10} allowDecimals={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: 'none' }}
-                />
-                <Area type="monotone" dataKey="count" name="New Products" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorAdded)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+  {stats.productsAddedByMonth.length === 0 ? (
+    <div className="h-full flex flex-col items-center justify-center text-gray-400">
+      <Package className="h-8 w-8 mb-2 opacity-30" />
+      <p className="text-xs font-medium">No product data available</p>
+      <p className="text-[10px]">Start adding products to see growth trends</p>
+    </div>
+  ) : (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart
+        data={stats.productsAddedByMonth}
+        margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
+      >
+        <defs>
+          <linearGradient id="colorAdded" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
+            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+        <XAxis dataKey="name" tickLine={false} stroke="#94a3b8" fontSize={10} />
+        <YAxis tickLine={false} stroke="#94a3b8" fontSize={10} allowDecimals={false} />
+        <Tooltip 
+          contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #E2E8F0' }}
+        />
+        <Area type="monotone" dataKey="count" name="New Products" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorAdded)" />
+      </AreaChart>
+    </ResponsiveContainer>
+  )}
+</div>
         </div>
 
         {/* Side Panel: Critical stocks summary list */}
@@ -350,7 +378,7 @@ export const Dashboard: React.FC = () => {
                     <div className="min-w-0 pr-2 text-left">
                       <h5 className="text-sm font-semibold text-slate-900 truncate">{p.name}</h5>
                       <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
-                        SKU: {p.sku || `SKU-${10000 + p.id.charCodeAt(0) * 8}`}
+                        ID: {p.id}
                       </span>
                     </div>
                     
