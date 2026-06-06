@@ -1,58 +1,71 @@
-import { apiClient, isNetworkError } from './apiClient';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { apiClient } from './apiClient';
 import { type User, type UserRole } from '../types';
-import { MOCK_USERS, MockDb } from './mockDB';
 
 export interface LoginResponse {
-  token: string;
-  user: User;
+  token?: string;
+  accessToken?: string;
+  user?: {
+    id: number;
+    nom: string;
+    email: string;
+    role: string;
+  };
+}
+
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
 }
 
 export const authService = {
-  async login(email: string, password: string, rememberMe: boolean = false): Promise<LoginResponse> {
+  async login(email: string, password: string, rememberMe: boolean = false): Promise<{ token: string; user: User }> {
     try {
-      // 1. Try real backend first
       const response = await apiClient.post<LoginResponse>('/auth/login', { email, password });
       
-      const { token, user } = response.data;
-      localStorage.setItem('stockmanager_token', token);
-      localStorage.setItem('stockmanager_active_user', JSON.stringify(user));
-      
-      return response.data;
-    } catch (error) {
-      if (isNetworkError(error)) {
-        console.warn('Backend server offline. Falling back to secure frontend simulated JWT session.');
-        
-        // 2. Client-side authentication fallback
-        const lowerEmail = email.toLowerCase().trim();
-        const foundUser = MOCK_USERS.find(u => u.email === lowerEmail);
-        
-        if (!foundUser) {
-          throw new Error('Invalid email or password. Try admin@stockmanager.com (pw: admin123).');
-        }
-
-        // Verify simulated password rules
-        let expectedPassword = 'user123';
-        if (foundUser.role === 'Administrator') expectedPassword = 'admin123';
-        if (foundUser.role === 'Stock Manager') expectedPassword = 'manager123';
-
-        if (password !== expectedPassword) {
-          throw new Error('Invalid credentials provided. Check passwords for role accounts.');
-        }
-
-        // Create secure simulated token (signed with role name so we decode it client side)
-        const mockToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI${foundUser.id}IiwibmFtZSI6IiR7Zm91bmRVc2VyLm5hbWV9Iiwicm9sZSI6IiR7Zm91bmRVc2VyLnJvbGV9IiwiZW1haWwiOiIke2ZvdW5kVXNlci5lbWFpbH0ifQ.mockSignature`;
-        
-        localStorage.setItem('stockmanager_token', mockToken);
-        localStorage.setItem('stockmanager_active_user', JSON.stringify(foundUser));
-        
-        return {
-          token: mockToken,
-          user: foundUser,
-        };
+      const token = response.data.token || response.data.accessToken || (response.data as any);
+      if (!token || typeof token !== 'string') {
+        throw new Error('No JWT token received from authentication endpoint.');
       }
+
+      localStorage.setItem('stockmanager_token', token);
+
+      let backendUser = response.data.user;
       
-      // Real backend responded with an error (e.g. 400, 401, 403)
-      const message = (error as any).response?.data?.message || 'Authentication failed. Please verify credentials.';
+      // If user details not in payload, decode JWT claims for email and role
+      const claims = parseJwt(token);
+      
+      const parsedRole = claims?.role || claims?.roles?.[0] || claims?.authorities?.[0] || 
+        (email.toLowerCase().includes('admin') ? 'ROLE_ADMIN' : 'ROLE_USER');
+      
+      const parsedNom = claims?.nom || claims?.name || email.split('@')[0];
+      const parsedId = claims?.id || 1;
+
+      const user: User = {
+        id: backendUser?.id ? Number(backendUser.id) : Number(parsedId),
+        nom: backendUser?.nom || parsedNom,
+        email: backendUser?.email || claims?.sub || claims?.email || email,
+        role: (backendUser?.role || parsedRole) as UserRole,
+        name: backendUser?.nom || parsedNom,
+      };
+
+      localStorage.setItem('stockmanager_active_user', JSON.stringify(user));
+      return { token, user };
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Authentication failed. Please verify credentials.';
       throw new Error(message);
     }
   },
@@ -81,8 +94,8 @@ export const authService = {
   },
 
   hasRole(allowedRoles: UserRole[]): boolean {
-    const user = this.getCurrentUser();
-    if (!user) return false;
-    return allowedRoles.includes(user.role);
-  }
+  const user = this.getCurrentUser();
+  if (!user) return false;
+  return allowedRoles.includes(user.role);
+}
 };

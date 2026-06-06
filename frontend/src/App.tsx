@@ -61,24 +61,18 @@ export default function App() {
               <Route path="suppliers" element={<Suppliers />} />
 
               {/* Operations: Stock Entry (Protected) */}
-              <Route
-                path="stock-entry"
-                element={
-                  <ProtectedRoute allowedRoles={['Administrator', 'Stock Manager']}>
-                    <StockEntry />
-                  </ProtectedRoute>
-                }
-              />
+             <Route path="/stock-entry" element={
+  <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+    <StockEntry />
+  </ProtectedRoute>
+} />
 
               {/* Operations: Stock Exit (Protected) */}
-              <Route
-                path="stock-exit"
-                element={
-                  <ProtectedRoute allowedRoles={['Administrator', 'Stock Manager']}>
-                    <StockExit />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/stock-exit" element={
+  <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+    <StockExit />
+  </ProtectedRoute>
+} />
 
               {/* Operations: Detailed Movements Audit Logs */}
               <Route path="movements" element={<MovementHistory />} />

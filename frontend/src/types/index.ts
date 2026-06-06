@@ -1,52 +1,71 @@
-
-export type UserRole = 'Administrator' | 'Stock Manager' | 'Simple User';
+export type UserRole = 'ADMIN' | 'MANAGER' | 'USER';
 
 export interface User {
-  id: string;
-  name: string;
+  id: string | Number;
+  nom: string;
   email: string;
   role: UserRole;
+  name: string; // fallback mapping
   avatarUrl?: string;
 }
 
 export interface Category {
-  id: string;
-  name: string;
+  id: string | number;
+  nom: string;
   description?: string;
-  createdAt: string;
+  createdAt?: string;
   productCount?: number;
+  // compatibility mappings:
+  name: string;
 }
 
 export interface Supplier {
-  id: string;
-  name: string;
+  id: string | number;
+  nom: string;
+  telephone: string;
   email: string;
+  adresse: string;
+  createdAt?: string;
+  productCount?: number;
+  // compatibility mappings:
+  name: string;
   phone: string;
   address: string;
-  createdAt: string;
-  productCount?: number;
 }
 
 export interface Product {
-  // sku: string;
-  id: string;
-  name: string;
+  id: string | Number ;
+  nom: string;
   description: string;
-  categoryId: string;
-  supplierId: string;
+  prix: number;
+  quantiteStock: number;
+  dateAjout: string;
+  categorie: Category;
+  fournisseur: Supplier;
+  minStockThreshold: number;
+
+  // compatibility mappings:
+  name: string;
   quantity: number;
   unitPrice: number;
-  minStockThreshold: number;
-  category?: Category;     // Included when populated
-  supplier?: Supplier;     // Included when populated
-  createdAt: string;
+  categoryId: string;
+  supplierId: string;
+  category?: Category;
+  supplier?: Supplier;
+  createdAt?: string;
 }
 
 export interface StockMovement {
-  id: string;
+  id: string | Number;
+  type: string; // 'ENTRY' | 'EXIT' / 'ENTREE' | 'SORTIE'
+  quantite: number;
+  dateMouvement: string;
+  produit: Product;
+  user: User;
+
+  // compatibility mappings:
   productId: string;
   productName: string;
-  type: 'ENTRY' | 'EXIT';
   quantity: number;
   date: string;
   notes?: string;

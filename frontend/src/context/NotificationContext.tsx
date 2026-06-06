@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { AnimatePresence, motion } from 'motion/react';
 import { AlertCircle, CheckCircle, Info, X, AlertTriangle } from 'lucide-react';
 import { productService } from '../services/productService';
-import type { Product } from '../types';
+import {type  Product } from '../types';
 
 export interface Toast {
   id: string;
